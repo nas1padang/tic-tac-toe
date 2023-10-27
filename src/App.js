@@ -1,57 +1,81 @@
 
-import * as React from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-function Board() {
-  const squares = Array(9).fill(null);
-  function selectSquare(square) {
+const GameContext = createContext();
 
-  }
+export function useGame() {
+  return useContext(GameContext);
+}
+
+export function GameProvider({ children }) {
+  const [squares, setSquares] = useState(Array(9).fill(null));
 
   function restart() {
+    setSquares(Array(9).fill(null));
+  }
+
+  return (
+    <GameContext.Provider value={{ squares, setSquares, restart }}>
+      {children}
+    </GameContext.Provider>
+  );
+}
+
+
+
+function Board() {
+  const { squares, setSquares } = useGame();
+
+  const nextValue = calculateNextValue(squares);
+  const winner = calculateWinner(squares);
+  const status = calculateStatus(winner, squares, nextValue);
+
+  function selectSquare(square) {
+    if (squares[square] || winner) return; // If square is already filled or if there's a winner, return
+    const squaresCopy = [...squares];
+    squaresCopy[square] = nextValue;
+    setSquares(squaresCopy);
   }
 
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
+      <button 
+        className="square w-16 h-16 border border-gray-400 flex items-center justify-center text-2xl hover:bg-gray-200 transition duration-150" 
+        onClick={() => selectSquare(i)}
+        key={i}
+      >
         {squares[i]}
       </button>
     );
   }
 
   return (
-    <div>
-      <div >STATUS</div>
-      <div >
-        {renderSquare(0)}
-        {renderSquare(1)}
-        {renderSquare(2)}
+    <div className="p-4 bg-white rounded-xl shadow-md">
+      <div className="mb-4 text-lg font-semibold">{status}</div>
+      <div className="grid grid-cols-3 gap-2">
+        {Array(9).fill(null).map((_, index) => renderSquare(index))}
       </div>
-      <div >
-        {renderSquare(3)}
-        {renderSquare(4)}
-        {renderSquare(5)}
-      </div>
-      <div >
-        {renderSquare(6)}
-        {renderSquare(7)}
-        {renderSquare(8)}
-      </div>
-      <button onClick={restart}>
-        restart
-      </button>
     </div>
   );
 }
 
 function Game() {
+  const { restart } = useGame();
+
   return (
-    <div >
-      <div >
-        <Board />
-      </div>
+    <div className="p-4 flex flex-col items-center">
+      <Board />
+      <button 
+        onClick={restart}
+        className="mt-8 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded shadow-md transition duration-150"
+      >
+        Reset
+      </button>
     </div>
   );
 }
+
+
 
 // eslint-disable-next-line no-unused-vars
 function calculateStatus(winner, squares, nextValue) {
@@ -89,7 +113,15 @@ function calculateWinner(squares) {
 }
 
 function App() {
-  return <Game />;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-200">
+      <GameProvider>
+        <Game />
+      </GameProvider>
+    </div>
+  );
 }
+
+
 
 export default App;
